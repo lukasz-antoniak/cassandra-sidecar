@@ -58,6 +58,7 @@ import org.apache.cassandra.sidecar.db.schema.TableSchemaFetcher;
 import org.apache.cassandra.sidecar.metrics.MetricRegistryFactory;
 import org.apache.cassandra.sidecar.metrics.instance.InstanceHealthMetrics;
 import org.apache.cassandra.sidecar.utils.CassandraVersionProvider;
+import org.apache.cassandra.sidecar.utils.SimpleCassandraVersion;
 
 import static org.apache.cassandra.sidecar.common.server.utils.ByteUtils.bytesToHumanReadableBinaryPrefix;
 import static org.apache.cassandra.sidecar.server.SidecarServerEvents.ON_SERVER_STOP;
@@ -240,7 +241,11 @@ public class ConfigurationModule extends AbstractModule
                                                                          host,
                                                                          port,
                                                                          new InstanceHealthMetrics(instanceSpecificRegistry));
+        // TODO(lantoniak): From where to get Cassandra version?
+        //  Ugly, but works: String releaseVersion = session.get().execute("SELECT release_version FROM system.local").one().getString(0);
+        SimpleCassandraVersion version = SimpleCassandraVersion.create("5.0.5");
         return InstanceMetadataImpl.builder()
+                                   .version(version)
                                    .id(cassandraInstance.id())
                                    .host(host, dnsResolver)
                                    .port(port)

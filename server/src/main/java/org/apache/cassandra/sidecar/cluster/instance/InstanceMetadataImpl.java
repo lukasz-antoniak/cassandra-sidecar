@@ -38,6 +38,7 @@ import org.apache.cassandra.sidecar.exceptions.ConfigurationException;
 import org.apache.cassandra.sidecar.metrics.instance.InstanceMetrics;
 import org.apache.cassandra.sidecar.metrics.instance.InstanceMetricsImpl;
 import org.apache.cassandra.sidecar.utils.FileUtils;
+import org.apache.cassandra.sidecar.utils.SimpleCassandraVersion;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -53,6 +54,7 @@ public class InstanceMetadataImpl implements InstanceMetadata
     private static final String DEFAULT_HINTS_DIR = "hints";
     private static final String DEFAULT_SAVED_CACHES_DIR = "saved_caches";
 
+    private final SimpleCassandraVersion version;
     private final int id;
     private final String host;
     private final int port;
@@ -76,6 +78,7 @@ public class InstanceMetadataImpl implements InstanceMetadata
 
     protected InstanceMetadataImpl(Builder builder)
     {
+        version = builder.version;
         id = builder.id;
         host = builder.host;
         dnsResolver = builder.dnsResolver;
@@ -99,6 +102,11 @@ public class InstanceMetadataImpl implements InstanceMetadata
                            ? Collections.unmodifiableMap(builder.lifecycleOptions)
                            : Collections.emptyMap();
         storageDir = builder.storageDir;
+    }
+
+    public SimpleCassandraVersion version()
+    {
+        return version;
     }
 
     @Override
@@ -244,6 +252,7 @@ public class InstanceMetadataImpl implements InstanceMetadata
      */
     public static class Builder implements DataObjectBuilder<Builder, InstanceMetadataImpl>
     {
+        protected SimpleCassandraVersion version;
         protected DnsResolver dnsResolver;
         protected Integer id;
         protected String host;
@@ -290,6 +299,17 @@ public class InstanceMetadataImpl implements InstanceMetadata
         public Builder self()
         {
             return this;
+        }
+
+        /**
+         * Sets the {@code version} and returns a reference to this Builder enabling method chaining.
+         *
+         * @param version the {@code version} to set
+         * @return a reference to this Builder
+         */
+        public Builder version(SimpleCassandraVersion version)
+        {
+            return update(b -> b.version = version);
         }
 
         /**

@@ -25,6 +25,7 @@ import java.util.Map;
 import org.apache.cassandra.sidecar.cluster.CassandraAdapterDelegate;
 import org.apache.cassandra.sidecar.exceptions.CassandraUnavailableException;
 import org.apache.cassandra.sidecar.metrics.instance.InstanceMetrics;
+import org.apache.cassandra.sidecar.utils.SimpleCassandraVersion;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -33,6 +34,11 @@ import org.jetbrains.annotations.Nullable;
  */
 public interface InstanceMetadata
 {
+    /**
+     * @return an Cassandra version
+     */
+    SimpleCassandraVersion version();
+
     /**
      * @return an identifier for the Cassandra instance
      */

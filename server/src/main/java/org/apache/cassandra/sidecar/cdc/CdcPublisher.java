@@ -60,6 +60,7 @@ import org.apache.cassandra.sidecar.db.VirtualTablesDatabaseAccessor;
 import org.apache.cassandra.sidecar.tasks.PeriodicTask;
 import org.apache.cassandra.sidecar.tasks.ScheduleDecision;
 import org.apache.cassandra.sidecar.utils.InstanceMetadataFetcher;
+import org.apache.cassandra.sidecar.utils.SimpleCassandraVersion;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.common.serialization.Serializer;
 
@@ -77,6 +78,7 @@ public class CdcPublisher implements Handler<Message<Object>>, PeriodicTask
     private static final long INITIALIZATION_LOOP_DELAY_MILLIS = 1000;
 
     private final TaskExecutorPool executorPools;
+    private final SimpleCassandraVersion version;
     private final CdcConfig conf;
     private volatile boolean isRunning = false;
     private volatile boolean isInitialized = false;
@@ -129,6 +131,7 @@ public class CdcPublisher implements Handler<Message<Object>>, PeriodicTask
         this.sidecarConfiguration = sidecarConfiguration;
         this.avroSerializer = avroSerializer;
         this.rangeManagerProvider = rangeManagerProvider;
+        this.version = SimpleCassandraVersion.create("5.0.5"); // TODO(lantoniak): From where to get Cassandra version?
 
         if (conf.cdcEnabled())
         {
@@ -184,13 +187,14 @@ public class CdcPublisher implements Handler<Message<Object>>, PeriodicTask
             this.kafkaPublisher.close();
         }
         this.producer = new KafkaProducer<>(conf.kafkaConfigs());
-        this.kafkaPublisher = new KafkaPublisher(TopicSupplier.staticTopicSupplier(conf.kafkaTopic()),
-                                                           producer,
-                                                           avroSerializer,
-                                                           conf.maxRecordSizeBytes(),
-                                                           conf.failOnRecordTooLargeError(),
-                                                           conf.failOnKafkaError(),
-                                                           CdcLogMode.FULL);
+        this.kafkaPublisher = new KafkaPublisher(version.toString(),
+                                                 TopicSupplier.staticTopicSupplier(conf.kafkaTopic()),
+                                                 producer,
+                                                 avroSerializer,
+                                                 conf.maxRecordSizeBytes(),
+                                                 conf.failOnRecordTooLargeError(),
+                                                 conf.failOnKafkaError(),
+                                                 CdcLogMode.FULL);
         return new CdcEventConsumer(kafkaPublisher);
     }
 

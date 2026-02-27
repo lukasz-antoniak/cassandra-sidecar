@@ -20,8 +20,11 @@ package org.apache.cassandra.sidecar.cdc;
 
 import java.util.Map;
 
+import org.apache.cassandra.bridge.CassandraVersion;
 import org.apache.cassandra.cdc.api.CdcOptions;
+import org.apache.cassandra.sidecar.cluster.instance.InstanceMetadata;
 import org.apache.cassandra.sidecar.utils.InstanceMetadataFetcher;
+import org.apache.cassandra.sidecar.utils.SimpleCassandraVersion;
 import org.apache.cassandra.spark.data.ReplicationFactor;
 
 /**
@@ -49,5 +52,11 @@ public class SidecarCdcOptions implements CdcOptions
     public String dc()
     {
         return instanceMetadataFetcher.callOnFirstAvailableInstance(instance-> instance.delegate().nodeSettings().datacenter());
+    }
+
+    public CassandraVersion version()
+    {
+        SimpleCassandraVersion version = instanceMetadataFetcher.callOnFirstAvailableInstance(InstanceMetadata::version);
+        return CassandraVersion.fromVersion(version.toString()).orElseThrow(() -> new UnsupportedOperationException("Unsupported Cassandra version: " + version));
     }
 }
