@@ -26,6 +26,8 @@ import java.util.Collections;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -52,13 +54,16 @@ import org.apache.cassandra.sidecar.TestModule;
 import org.apache.cassandra.sidecar.cluster.CassandraAdapterDelegate;
 import org.apache.cassandra.sidecar.cluster.InstancesMetadata;
 import org.apache.cassandra.sidecar.cluster.instance.InstanceMetadata;
+import org.apache.cassandra.sidecar.common.server.data.Name;
 import org.apache.cassandra.sidecar.common.server.utils.IOUtils;
+import org.apache.cassandra.sidecar.db.CQLSchemaAccessor;
 import org.apache.cassandra.sidecar.modules.SidecarModules;
 import org.apache.cassandra.sidecar.server.Server;
 
 import static io.netty.handler.codec.http.HttpResponseStatus.NOT_FOUND;
 import static io.netty.handler.codec.http.HttpResponseStatus.OK;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -116,8 +121,8 @@ class SchemaHandlerTest
                   assertThat(response.statusCode()).isEqualTo(OK.code());
                   JsonObject jsonObject = response.bodyAsJsonObject();
                   assertThat(jsonObject.getString("keyspace")).isNull();
-                  assertThat(jsonObject.getString("schema"))
-                  .isEqualTo("FULL SCHEMA");
+                  assertThat(jsonObject.getString("schema").trim())
+                  .isEqualTo(testKeyspaceSchema.trim());
                   context.completeNow();
               })));
     }
@@ -133,8 +138,8 @@ class SchemaHandlerTest
                   assertThat(response.statusCode()).isEqualTo(OK.code());
                   JsonObject jsonObject = response.bodyAsJsonObject();
                   assertThat(jsonObject.getString("keyspace")).isEqualTo("testKeyspace");
-                  assertThat(jsonObject.getString("schema"))
-                  .isEqualTo(testKeyspaceSchema);
+                  assertThat(jsonObject.getString("schema").trim())
+                  .isEqualTo(testKeyspaceSchema.trim());
                   context.completeNow();
               })));
     }
@@ -185,6 +190,16 @@ class SchemaHandlerTest
             when(mockInstancesMetadata.instanceFromHost(host)).thenReturn(instanceMetadata);
 
             return mockInstancesMetadata;
+        }
+
+        @Provides
+        @Singleton
+        public CQLSchemaAccessor cqlSchemaAccessor() throws IOException
+        {
+            CQLSchemaAccessor schemaAccessor = mock(CQLSchemaAccessor.class);
+            when(schemaAccessor.getKeyspaces()).thenReturn(ImmutableSet.of(new Name("testKeyspace")));
+            when(schemaAccessor.getSchema(any())).thenReturn(ImmutableList.of(testKeyspaceSchema));
+            return schemaAccessor;
         }
     }
 }
