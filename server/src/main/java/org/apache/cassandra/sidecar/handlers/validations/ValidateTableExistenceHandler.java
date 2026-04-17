@@ -27,8 +27,10 @@ import io.vertx.core.Future;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.net.SocketAddress;
 import io.vertx.ext.web.RoutingContext;
+import org.apache.cassandra.sidecar.common.server.data.Name;
 import org.apache.cassandra.sidecar.common.server.data.QualifiedTableName;
 import org.apache.cassandra.sidecar.concurrent.ExecutorPools;
+import org.apache.cassandra.sidecar.db.DriverUnsupportedSchemaCache;
 import org.apache.cassandra.sidecar.handlers.AbstractHandler;
 import org.apache.cassandra.sidecar.routes.RoutingContextUtils;
 import org.apache.cassandra.sidecar.utils.CassandraInputValidator;
@@ -46,12 +48,16 @@ import static org.apache.cassandra.sidecar.utils.HttpExceptions.wrapHttpExceptio
 @Singleton
 public class ValidateTableExistenceHandler extends AbstractHandler<QualifiedTableName>
 {
+    private final DriverUnsupportedSchemaCache driverUnsupportedSchemaCache;
+
     @Inject
     public ValidateTableExistenceHandler(InstanceMetadataFetcher metadataFetcher,
                                          ExecutorPools executorPools,
-                                         CassandraInputValidator validator)
+                                         CassandraInputValidator validator,
+                                         DriverUnsupportedSchemaCache driverUnsupportedSchemaCache)
     {
         super(metadataFetcher, executorPools, validator);
+        this.driverUnsupportedSchemaCache = driverUnsupportedSchemaCache;
     }
 
     // It is a validator, and it does not assume values (keyspace and table) are present.
@@ -97,7 +103,14 @@ public class ValidateTableExistenceHandler extends AbstractHandler<QualifiedTabl
             }
 
             TableMetadata tableMetadata = keyspaceMetadata.getTable(table);
-            if (tableMetadata == null)
+            boolean tableExists = tableMetadata != null;
+            if (!tableExists)
+            {
+                tableExists = driverUnsupportedSchemaCache.getTableSchema(new Name(keyspaceMetadata.getName()),
+                                                                          new Name(table),
+                                                                          false) != null;
+            }
+            if (!tableExists)
             {
                 String errMsg = "Table " + input.tableName() + " was not found for keyspace " + input.keyspace();
                 context.fail(wrapHttpException(HttpResponseStatus.NOT_FOUND, errMsg));

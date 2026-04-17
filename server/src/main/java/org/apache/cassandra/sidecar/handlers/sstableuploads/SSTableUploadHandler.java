@@ -40,6 +40,7 @@ import org.apache.cassandra.sidecar.concurrent.ExecutorPools;
 import org.apache.cassandra.sidecar.concurrent.TaskExecutorPool;
 import org.apache.cassandra.sidecar.config.SSTableUploadConfiguration;
 import org.apache.cassandra.sidecar.config.ServiceConfiguration;
+import org.apache.cassandra.sidecar.db.DriverUnsupportedSchemaCache;
 import org.apache.cassandra.sidecar.handlers.AbstractHandler;
 import org.apache.cassandra.sidecar.handlers.AccessProtected;
 import org.apache.cassandra.sidecar.handlers.data.SSTableUploadRequestParam;
@@ -70,18 +71,20 @@ public class SSTableUploadHandler extends AbstractHandler<SSTableUploadRequestPa
     private final SSTableUploadsPathBuilder uploadPathBuilder;
     private final ConcurrencyLimiter limiter;
     private final DigestVerifierFactory digestVerifierFactory;
+    private final DriverUnsupportedSchemaCache driverUnsupportedSchemaCache;
 
     /**
      * Constructs a handler with the provided params.
      *
-     * @param vertx                 the vertx instance
-     * @param serviceConfiguration  configuration object holding config details of Sidecar
-     * @param metadataFetcher       the interface to retrieve metadata
-     * @param uploader              a class that uploads the components
-     * @param uploadPathBuilder     a class that provides SSTableUploads directories
-     * @param executorPools         executor pools for blocking executions
-     * @param validator             a validator instance to validate Cassandra-specific input
-     * @param digestVerifierFactory a factory of checksum verifiers
+     * @param vertx                        the vertx instance
+     * @param serviceConfiguration         configuration object holding config details of Sidecar
+     * @param metadataFetcher              the interface to retrieve metadata
+     * @param uploader                     a class that uploads the components
+     * @param uploadPathBuilder            a class that provides SSTableUploads directories
+     * @param executorPools                executor pools for blocking executions
+     * @param validator                    a validator instance to validate Cassandra-specific input
+     * @param digestVerifierFactory        a factory of checksum verifiers
+     * @param driverUnsupportedSchemaCache cache of unparseable table schemas by Java driver
      */
     @Inject
     protected SSTableUploadHandler(Vertx vertx,
@@ -91,7 +94,8 @@ public class SSTableUploadHandler extends AbstractHandler<SSTableUploadRequestPa
                                    SSTableUploadsPathBuilder uploadPathBuilder,
                                    ExecutorPools executorPools,
                                    CassandraInputValidator validator,
-                                   DigestVerifierFactory digestVerifierFactory)
+                                   DigestVerifierFactory digestVerifierFactory,
+                                   DriverUnsupportedSchemaCache driverUnsupportedSchemaCache)
     {
         super(metadataFetcher, executorPools, validator);
         this.fs = vertx.fileSystem();
@@ -100,6 +104,7 @@ public class SSTableUploadHandler extends AbstractHandler<SSTableUploadRequestPa
         this.uploadPathBuilder = uploadPathBuilder;
         this.limiter = new ConcurrencyLimiter(configuration::concurrentUploadsLimit);
         this.digestVerifierFactory = digestVerifierFactory;
+        this.driverUnsupportedSchemaCache = driverUnsupportedSchemaCache;
     }
 
     @Override
@@ -209,13 +214,17 @@ public class SSTableUploadHandler extends AbstractHandler<SSTableUploadRequestPa
                            logger.error(message);
                            return Future.failedFuture(wrapHttpException(HttpResponseStatus.BAD_REQUEST, message));
                        }
-
                        if (MetadataUtils.table(keyspaceMetadata, request.table()) == null)
                        {
-                           String message = String.format("Invalid table name '%s' supplied for keyspace '%s'",
-                                                          request.table(), request.keyspace());
-                           logger.error(message);
-                           return Future.failedFuture(wrapHttpException(HttpResponseStatus.BAD_REQUEST, message));
+                           // check for tables that are not parseable by Java driver's metadata feature
+                           boolean tableExists = driverUnsupportedSchemaCache.getTableSchema(request.keyspace(), request.table(), false) != null;
+                           if (!tableExists)
+                           {
+                               String message = String.format("Invalid table name '%s' supplied for keyspace '%s'",
+                                                              request.table(), request.keyspace());
+                               logger.error(message);
+                               return Future.failedFuture(wrapHttpException(HttpResponseStatus.BAD_REQUEST, message));
+                           }
                        }
                        return Future.succeededFuture(request);
                    });
