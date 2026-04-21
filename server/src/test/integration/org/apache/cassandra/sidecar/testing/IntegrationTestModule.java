@@ -60,6 +60,7 @@ import org.apache.cassandra.sidecar.coordination.ClusterLease;
 import org.apache.cassandra.sidecar.coordination.ClusterLeaseClaimTask;
 import org.apache.cassandra.sidecar.coordination.ElectorateMembership;
 import org.apache.cassandra.sidecar.db.SidecarLeaseDatabaseAccessor;
+import org.apache.cassandra.sidecar.exceptions.CassandraUnavailableException;
 import org.apache.cassandra.sidecar.exceptions.NoSuchCassandraInstanceException;
 import org.apache.cassandra.sidecar.metrics.SidecarMetrics;
 import org.apache.cassandra.sidecar.modules.multibindings.ClassKey;
@@ -70,6 +71,7 @@ import org.apache.cassandra.sidecar.tasks.PeriodicTask;
 import org.apache.cassandra.sidecar.tasks.ScheduleDecision;
 import org.jetbrains.annotations.NotNull;
 
+import static org.apache.cassandra.sidecar.exceptions.CassandraUnavailableException.Service.CQL;
 import static org.apache.cassandra.sidecar.server.SidecarServerEvents.ON_SERVER_STOP;
 
 /**
@@ -227,7 +229,12 @@ public class IntegrationTestModule extends AbstractModule
             @NotNull
             public Session get()
             {
-                return cassandraSidecarTestContext.session();
+                Session session =  cassandraSidecarTestContext.session();
+                if (session == null)
+                {
+                    throw new CassandraUnavailableException(CQL, "CQL session unavailable");
+                }
+                return session;
             }
 
             @Override

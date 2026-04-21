@@ -54,7 +54,7 @@ import org.apache.cassandra.sidecar.config.JmxConfiguration;
 import org.apache.cassandra.sidecar.config.ServiceConfiguration;
 import org.apache.cassandra.sidecar.config.SidecarConfiguration;
 import org.apache.cassandra.sidecar.config.yaml.SidecarConfigurationImpl;
-import org.apache.cassandra.sidecar.db.CQLSchemaAccessor;
+import org.apache.cassandra.sidecar.db.DriverUnsupportedSchemaCache;
 import org.apache.cassandra.sidecar.db.schema.TableSchemaFetcher;
 import org.apache.cassandra.sidecar.metrics.MetricRegistryFactory;
 import org.apache.cassandra.sidecar.metrics.instance.InstanceHealthMetrics;
@@ -129,9 +129,10 @@ public class ConfigurationModule extends AbstractModule
 
     @Provides
     @Singleton
-    CQLSchemaAccessor cqlSchemaAccessor(CQLSessionProvider cqlSessionProvider)
+    DriverUnsupportedSchemaCache driverUnsupportedSchemaCache(SidecarConfiguration sidecarConfiguration,
+                                                              CQLSessionProvider cqlSessionProvider)
     {
-        return new CQLSchemaAccessor(cqlSessionProvider);
+        return new DriverUnsupportedSchemaCache(sidecarConfiguration, cqlSessionProvider);
     }
 
     @Provides

@@ -33,13 +33,12 @@ import com.google.common.annotations.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
 import com.google.inject.Singleton;
 import io.vertx.core.Promise;
 import org.apache.cassandra.bridge.CassandraBridge;
-import org.apache.cassandra.bridge.CassandraBridgeFactory;
 import org.apache.cassandra.bridge.CdcBridge;
 import org.apache.cassandra.bridge.CdcBridgeFactory;
+import org.apache.cassandra.sidecar.bridge.CassandraBridgeFactory;
 import org.apache.cassandra.sidecar.common.response.NodeSettings;
 import org.apache.cassandra.sidecar.common.server.utils.DurationSpec;
 import org.apache.cassandra.sidecar.config.SidecarConfiguration;
@@ -93,7 +92,7 @@ public class CassandraClusterSchemaMonitor implements PeriodicTask
 
     public void refresh()
     {
-        NodeSettings nodeSettings = instanceFetcher.callOnFirstAvailableInstance(instance-> instance.delegate().nodeSettings());
+        NodeSettings nodeSettings = instanceFetcher.callOnFirstAvailableInstance(instance -> instance.delegate().nodeSettings());
         CassandraBridge cassandraBridge = cassandraBridgeFactory.get(nodeSettings.releaseVersion());
         CdcBridge cdcBridge = CdcBridgeFactory.getCdcBridge(cassandraBridge);
 

@@ -23,8 +23,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import com.google.common.collect.ImmutableSet;
-
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.exceptions.InvalidQueryException;
@@ -40,9 +38,6 @@ import org.jetbrains.annotations.Nullable;
 @Singleton
 public class CQLSchemaAccessor
 {
-    // Keyspaces not returned by Java 3.x driver, but present when queried via DESCRIBE statement.
-    private static final Set<String> IGNORED_KEYSPACES = ImmutableSet.of("system_accord");
-
     private final CQLSessionProvider sessionProvider;
 
     public CQLSchemaAccessor(CQLSessionProvider sessionProvider)
@@ -59,25 +54,29 @@ public class CQLSchemaAccessor
         for (Row row : rows)
         {
             Name keyspaceName = new Name(row.getString("keyspace_name"));
-            if (!IGNORED_KEYSPACES.contains(keyspaceName.name()))
-            {
-                keyspaces.add(keyspaceName);
-            }
+            keyspaces.add(keyspaceName);
         }
         return keyspaces;
     }
 
     @Nullable
-    public List<String> getSchema(@NotNull Name keyspace)
+    public List<String> getKeyspaceSchema(@NotNull Name keyspace)
     {
         Session session = sessionProvider.get();
-        return describeKeyspace(session, keyspace);
+        String statement = String.format("DESCRIBE KEYSPACE %s", keyspace.maybeQuotedName());
+        return describe(session, statement);
     }
 
-
-    private List<String> describeKeyspace(Session session, Name keyspace)
+    @Nullable
+    public List<String> getTableSchema(@NotNull Name keyspace, @NotNull Name table)
     {
-        String describeStatement = String.format("DESCRIBE KEYSPACE %s", keyspace.maybeQuotedName());
+        Session session = sessionProvider.get();
+        String statement = String.format("DESCRIBE TABLE %s.%s", keyspace.maybeQuotedName(), table.maybeQuotedName());
+        return describe(session, statement);
+    }
+
+    private List<String> describe(Session session, String describeStatement)
+    {
         try
         {
             List<Row> rows = session.execute(describeStatement).all();
@@ -91,7 +90,7 @@ public class CQLSchemaAccessor
         }
         catch (InvalidQueryException e)
         {
-            // keyspace not found
+            // keyspace or table not found
             return null;
         }
     }

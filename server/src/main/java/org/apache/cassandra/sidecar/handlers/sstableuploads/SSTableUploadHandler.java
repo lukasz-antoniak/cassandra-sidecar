@@ -40,6 +40,7 @@ import org.apache.cassandra.sidecar.concurrent.ExecutorPools;
 import org.apache.cassandra.sidecar.concurrent.TaskExecutorPool;
 import org.apache.cassandra.sidecar.config.SSTableUploadConfiguration;
 import org.apache.cassandra.sidecar.config.ServiceConfiguration;
+import org.apache.cassandra.sidecar.db.DriverUnsupportedSchemaCache;
 import org.apache.cassandra.sidecar.handlers.AbstractHandler;
 import org.apache.cassandra.sidecar.handlers.AccessProtected;
 import org.apache.cassandra.sidecar.handlers.data.SSTableUploadRequestParam;
@@ -70,6 +71,7 @@ public class SSTableUploadHandler extends AbstractHandler<SSTableUploadRequestPa
     private final SSTableUploadsPathBuilder uploadPathBuilder;
     private final ConcurrencyLimiter limiter;
     private final DigestVerifierFactory digestVerifierFactory;
+    private final DriverUnsupportedSchemaCache driverUnsupportedSchemaCache;
 
     /**
      * Constructs a handler with the provided params.
@@ -91,7 +93,8 @@ public class SSTableUploadHandler extends AbstractHandler<SSTableUploadRequestPa
                                    SSTableUploadsPathBuilder uploadPathBuilder,
                                    ExecutorPools executorPools,
                                    CassandraInputValidator validator,
-                                   DigestVerifierFactory digestVerifierFactory)
+                                   DigestVerifierFactory digestVerifierFactory,
+                                   DriverUnsupportedSchemaCache driverUnsupportedSchemaCache)
     {
         super(metadataFetcher, executorPools, validator);
         this.fs = vertx.fileSystem();
@@ -100,6 +103,7 @@ public class SSTableUploadHandler extends AbstractHandler<SSTableUploadRequestPa
         this.uploadPathBuilder = uploadPathBuilder;
         this.limiter = new ConcurrencyLimiter(configuration::concurrentUploadsLimit);
         this.digestVerifierFactory = digestVerifierFactory;
+        this.driverUnsupportedSchemaCache = driverUnsupportedSchemaCache;
     }
 
     @Override
@@ -209,13 +213,17 @@ public class SSTableUploadHandler extends AbstractHandler<SSTableUploadRequestPa
                            logger.error(message);
                            return Future.failedFuture(wrapHttpException(HttpResponseStatus.BAD_REQUEST, message));
                        }
-
                        if (MetadataUtils.table(keyspaceMetadata, request.table()) == null)
                        {
-                           String message = String.format("Invalid table name '%s' supplied for keyspace '%s'",
-                                                          request.table(), request.keyspace());
-                           logger.error(message);
-                           return Future.failedFuture(wrapHttpException(HttpResponseStatus.BAD_REQUEST, message));
+                           // check for tables that are not supported by Java driver
+                           boolean tableExists = driverUnsupportedSchemaCache.getTableSchema(request.keyspace(), request.table()) != null;
+                           if (!tableExists)
+                           {
+                               String message = String.format("Invalid table name '%s' supplied for keyspace '%s'",
+                                                              request.table(), request.keyspace());
+                               logger.error(message);
+                               return Future.failedFuture(wrapHttpException(HttpResponseStatus.BAD_REQUEST, message));
+                           }
                        }
                        return Future.succeededFuture(request);
                    });

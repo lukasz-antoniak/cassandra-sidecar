@@ -32,7 +32,7 @@ import static org.apache.cassandra.testing.utils.AssertionUtils.getBlocking;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assumptions.assumeThat;
 
-class CassandraSchemaIncompatibleRouteIntegrationTest extends SharedClusterSidecarIntegrationTestBase
+class CassandraVectorSchemaRouteIntegrationTest extends SharedClusterSidecarIntegrationTestBase
 {
     protected static final int MIN_VERSION_WITH_VECTOR = 5;
 

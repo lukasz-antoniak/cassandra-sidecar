@@ -21,6 +21,9 @@ package org.apache.cassandra.sidecar.config;
 import java.net.InetSocketAddress;
 import java.util.List;
 
+import org.apache.cassandra.sidecar.common.server.utils.DurationSpec;
+import org.apache.cassandra.sidecar.common.server.utils.SecondBoundConfiguration;
+
 /**
  * The driver configuration to use when connecting to Cassandra
  */
@@ -61,4 +64,9 @@ public interface DriverConfiguration
      * Cassandra instance.
      */
     SslConfiguration sslConfiguration();
+
+    /**
+     * @return Refresh interval of table schemas not supported by Java driver.
+     */
+    DurationSpec unsupportedTableSchemaRefreshTime();
 }

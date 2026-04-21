@@ -21,8 +21,11 @@ package org.apache.cassandra.sidecar.config.yaml;
 import java.net.InetSocketAddress;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.apache.cassandra.sidecar.common.server.utils.DurationSpec;
+import org.apache.cassandra.sidecar.common.server.utils.SecondBoundConfiguration;
 import org.apache.cassandra.sidecar.config.DriverConfiguration;
 import org.apache.cassandra.sidecar.config.SslConfiguration;
 
@@ -32,6 +35,8 @@ import org.apache.cassandra.sidecar.config.SslConfiguration;
 public class DriverConfigurationImpl implements DriverConfiguration
 {
     private static final int DEFAULT_NUM_CONNECTIONS = 1000;
+    private static final DurationSpec DEFAULT_UNSUPPORTED_TABLE_SCHEMA_REFRESH_TIME = new SecondBoundConfiguration(5, TimeUnit.SECONDS);
+
     @JsonProperty("contact_points")
     private final List<InetSocketAddress> contactPoints;
 
@@ -50,9 +55,12 @@ public class DriverConfigurationImpl implements DriverConfiguration
     @JsonProperty("ssl")
     private final SslConfiguration sslConfiguration;
 
+    @JsonProperty("unsupported_table_refresh_time")
+    private final DurationSpec unsupportedTableSchemaRefreshTime;
+
     public DriverConfigurationImpl()
     {
-        this(Collections.emptyList(), null, DEFAULT_NUM_CONNECTIONS, null, null, null);
+        this(Collections.emptyList(), null, DEFAULT_NUM_CONNECTIONS, null, null, null, DEFAULT_UNSUPPORTED_TABLE_SCHEMA_REFRESH_TIME);
     }
 
     public DriverConfigurationImpl(List<InetSocketAddress> contactPoints,
@@ -60,7 +68,8 @@ public class DriverConfigurationImpl implements DriverConfiguration
                                    int numConnections,
                                    String username,
                                    String password,
-                                   SslConfiguration sslConfiguration)
+                                   SslConfiguration sslConfiguration,
+                                   DurationSpec unsupportedTableSchemaRefreshTime)
     {
         this.contactPoints = contactPoints;
         this.localDc = localDc;
@@ -68,6 +77,7 @@ public class DriverConfigurationImpl implements DriverConfiguration
         this.username = username;
         this.password = password;
         this.sslConfiguration = sslConfiguration;
+        this.unsupportedTableSchemaRefreshTime = unsupportedTableSchemaRefreshTime;
     }
 
     /**
@@ -128,5 +138,15 @@ public class DriverConfigurationImpl implements DriverConfiguration
     public SslConfiguration sslConfiguration()
     {
         return sslConfiguration;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    @JsonProperty("unsupported_table_refresh_time")
+    public DurationSpec unsupportedTableSchemaRefreshTime()
+    {
+        return unsupportedTableSchemaRefreshTime;
     }
 }
