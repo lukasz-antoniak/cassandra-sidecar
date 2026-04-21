@@ -83,18 +83,27 @@ public class DriverUnsupportedSchemaCache implements PeriodicTask
         populateSchemaCache();
     }
 
+    /**
+     * @return Schema for all tables across all keyspaces not supported by Java driver.
+     */
     @NotNull
     public String getFullSchema()
     {
         return getUnsupportedSchema(table -> true);
     }
 
+    /**
+     * @return Schema for all tables within given keyspaces not supported by Java driver.
+     */
     @NotNull
     public String getKeyspaceSchema(@NotNull Name keyspace)
     {
         return getUnsupportedSchema(table -> keyspace.equals(table.getKeyspace()));
     }
 
+    /**
+     * @return Schema for table if it is not supported by Java driver's metadata, {@code null} otherwise.
+     */
     @Nullable
     public String getTableSchema(@NotNull Name keyspace, @NotNull Name table)
     {
