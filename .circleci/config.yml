@@ -128,7 +128,7 @@ jobs:
       - attach_workspace:
           at: dtest-jars
       - run: ./scripts/install-shaded-dtest-jar-local.sh
-      - run: ./gradlew --no-daemon -PdtestVersion=4.0.16 -Dcassandra.sidecar.versions_to_test="4.0" checkstyleIntegrationTest integrationTestLightWeight --stacktrace
+      - run: GRADLE_OPTS="-Xmx2g -Dorg.gradle.jvmargs=-Xmx2g" ./gradlew --no-daemon --max-workers=2 -PdtestVersion=4.0.16 -Dcassandra.sidecar.versions_to_test="4.0" checkstyleIntegrationTest integrationTestLightWeight --stacktrace
 
       - store_artifacts:
           path: build/reports
@@ -183,7 +183,7 @@ jobs:
       - attach_workspace:
           at: dtest-jars
       - run: ./scripts/install-shaded-dtest-jar-local.sh
-      - run: ./gradlew --no-daemon -PdtestVersion=5.0.3 -Dcassandra.sidecar.versions_to_test="5.0" checkstyleIntegrationTest integrationTestLightWeight --stacktrace
+      - run: GRADLE_OPTS="-Xmx2g -Dorg.gradle.jvmargs=-Xmx2g" ./gradlew --no-daemon --max-workers=2 -PdtestVersion=5.0.3 -Dcassandra.sidecar.versions_to_test="5.0" checkstyleIntegrationTest integrationTestLightWeight --stacktrace
 
       - store_artifacts:
           path: build/reports
@@ -238,7 +238,7 @@ jobs:
       - attach_workspace:
           at: dtest-jars
       - run: ./scripts/install-shaded-dtest-jar-local.sh
-      - run: ./gradlew --no-daemon -PdtestVersion=5.1 -Dcassandra.sidecar.versions_to_test="5.1" checkstyleIntegrationTest integrationTestLightWeight --stacktrace
+      - run: GRADLE_OPTS="-Xmx2g -Dorg.gradle.jvmargs=-Xmx2g" ./gradlew --no-daemon --max-workers=2 -PdtestVersion=5.1 -Dcassandra.sidecar.versions_to_test="5.1" checkstyleIntegrationTest integrationTestLightWeight --stacktrace
 
       - store_artifacts:
           path: build/reports
