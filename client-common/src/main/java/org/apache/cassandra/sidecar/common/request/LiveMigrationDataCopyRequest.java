@@ -45,7 +45,7 @@ public class LiveMigrationDataCopyRequest
     public final int maxConcurrency;
 
     /**
-     * Creates a new request with auto-generated ID.
+     * Creates a new live migration data copy request.
      */
     @JsonCreator
     public LiveMigrationDataCopyRequest(@JsonProperty("maxIterations") int maxIterations,

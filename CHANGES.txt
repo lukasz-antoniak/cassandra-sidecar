@@ -1,3 +1,8 @@
+0.4.0
+-----
+ * Add safety check to Live Migration data copy task endpoint (CASSSIDECAR-409)
+ * Define common operational job tracking interface and refactor current operational job tracker (CASSSIDECAR-372)
+
 0.3.0
 -----
  * RangeManager should be singleton in CDCModule (CASSSIDECAR-411)

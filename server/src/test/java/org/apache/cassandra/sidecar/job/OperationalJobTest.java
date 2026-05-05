@@ -25,7 +25,7 @@ import com.google.common.util.concurrent.Uninterruptibles;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
-import com.datastax.driver.core.utils.UUIDs;
+import com.datastax.oss.driver.api.core.uuid.Uuids;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
@@ -53,7 +53,37 @@ class OperationalJobTest
 
     public static OperationalJob createOperationalJob(OperationalJobStatus jobStatus)
     {
-        return createOperationalJob(UUIDs.timeBased(), jobStatus);
+        return createOperationalJob(Uuids.timeBased(), jobStatus);
+    }
+
+    public static OperationalJob createOperationalJob(String name, OperationalJobStatus jobStatus)
+    {
+        return new OperationalJob(Uuids.timeBased())
+        {
+            @Override
+            protected Future<Void> executeInternal() throws OperationalJobException
+            {
+                return Future.succeededFuture();
+            }
+
+            @Override
+            public boolean hasConflict(List<OperationalJob> jobs)
+            {
+                return jobStatus == OperationalJobStatus.RUNNING;
+            }
+
+            @Override
+            public OperationalJobStatus status()
+            {
+                return jobStatus;
+            }
+
+            @Override
+            public String name()
+            {
+                return name;
+            }
+        };
     }
 
     public static OperationalJob createOperationalJob(UUID jobId, OperationalJobStatus jobStatus)
@@ -146,7 +176,7 @@ class OperationalJobTest
     void testJobFailed()
     {
         String msg = "Test Job failed";
-        OperationalJob failingJob = new OperationalJob(UUIDs.timeBased())
+        OperationalJob failingJob = new OperationalJob(Uuids.timeBased())
         {
             @Override
             public boolean hasConflict(List<OperationalJob> jobs)
@@ -179,7 +209,7 @@ class OperationalJobTest
     @Test
     void testGetAsyncResultInWaitTime()
     {
-        OperationalJob longRunning = createOperationalJob(UUIDs.timeBased(), MillisecondBoundConfiguration.parse("500ms"));
+        OperationalJob longRunning = createOperationalJob(Uuids.timeBased(), MillisecondBoundConfiguration.parse("500ms"));
         executorPool.executeBlocking(longRunning::execute);
         DurationSpec waitTime = SecondBoundConfiguration.parse("2s");
         Future<Void> result = longRunning.asyncResult(executorPool, waitTime);
@@ -191,7 +221,7 @@ class OperationalJobTest
     void testGetFailedAsyncResultInWaitTime()
     {
         OperationalJobException jobFailure = new OperationalJobException("Job fails");
-        OperationalJob longButFailedJob = createOperationalJob(UUIDs.timeBased(), MillisecondBoundConfiguration.parse("500ms"), jobFailure);
+        OperationalJob longButFailedJob = createOperationalJob(Uuids.timeBased(), MillisecondBoundConfiguration.parse("500ms"), jobFailure);
         executorPool.executeBlocking(longButFailedJob::execute);
         DurationSpec waitTime = SecondBoundConfiguration.parse("2s");
         Future<Void> result = longButFailedJob.asyncResult(executorPool, waitTime);
@@ -205,7 +235,7 @@ class OperationalJobTest
     @Test
     void testGetAsyncResultExceedsWaitTime()
     {
-        OperationalJob longRunning = createOperationalJob(UUIDs.timeBased(), SecondBoundConfiguration.parse("5s"));
+        OperationalJob longRunning = createOperationalJob(Uuids.timeBased(), SecondBoundConfiguration.parse("5s"));
         executorPool.executeBlocking(longRunning::execute);
         DurationSpec waitTime = MillisecondBoundConfiguration.parse("200ms");
         Future<Void> result = longRunning.asyncResult(executorPool, waitTime);

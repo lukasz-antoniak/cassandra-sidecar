@@ -80,6 +80,7 @@ public class HelperTestModules
             this.instanceMetadataList = instanceMetadataList;
         }
 
+        @Override
         protected void configure()
         {
             InstancesMetadata mockInstancesMetadata = mock(InstancesMetadata.class);

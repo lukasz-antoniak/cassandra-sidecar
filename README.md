@@ -23,6 +23,8 @@
 This is a Sidecar for the highly scalable Apache Cassandra database.
 For more information, see [the Apache Cassandra web site](http://cassandra.apache.org/) and [CIP-1](https://cwiki.apache.org/confluence/pages/viewpage.action?pageId=95652224).
 
+We use the [Sidecar for Apache Cassandra JIRA](https://issues.apache.org/jira/projects/CASSSIDECAR) to track issues.
+
 **This is project is still WIP.**
 
 Requirements
